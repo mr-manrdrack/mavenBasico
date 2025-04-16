@@ -3,7 +3,7 @@ package br.upe.mavenBasico;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
-public class ResultadoMegaSenaTests {
+public class ResultadoMegaCenaTests {
     private final static int NUMERO_DE_DEZENAS = 6;
 
     @Test

@@ -1,65 +1,44 @@
 package br.upe.mavenBasico;
 
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.ResponseHandler;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.BasicResponseHandler;
-import org.apache.http.impl.client.DefaultHttpClient;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 
-/**
-
-* Classe que obtém os números do último sorteio da mega-sena.
-
-*/
+import java.io.IOException;
 
 public class ResultadoMegaCena {
-/** URL que possui as dezenas sorteadas. */
-private final static String URL = "https://loterias.caixa.gov.br/Paginas/Mega-Sena.aspx";
 
-/** Marcação inicial para extrair as dezenas do retorno HTML. */
-private final static String MARCA_INICIAL_RETORNO_NAO_UTIL = "<div id='concurso_resultado'>";
+    private final static String URL = "https://www.megasena.com/resultados";
 
-/** Marcação final para extrair as dezenas do retorno HTML. */
-private final static String MARCA_FINAL_RETORNO_NAO_UTIL = "</div>";
+    public static String[] obtemUltimoResultado() {
+        try {
+            // Faz a requisição HTTP e obtém o HTML
+            Document doc = Jsoup.connect(URL).get();
 
-/**
-* Método que se conecta ao site da CEF para obter as dezenas
-do último sorteio.
-* @return array de Strings, onde cada elemento é uma dezena
-sorteada.
-*/
-public static String[] obtemUltimoResultado() {
-    // Criação do cliente HTTP que fará a conexão com o site
-    HttpClient httpclient = new DefaultHttpClient();
-    try {
-        // Definição da URL a ser utilizada
-        HttpGet httpget = new HttpGet(URL);
-        // Manipulador da resposta da conexão com a URL
-        ResponseHandler<String> responseHandler = new BasicResponseHandler();
-        // Resposta propriamente dita
-        String html = httpclient.execute(httpget, responseHandler);
-        // Retorno das dezenas, após tratamento
-        return obterDezenas(html);
-    } catch (Exception e) {
-        // Caso haja erro, dispara exceção.
-        throw new RuntimeException("Um erro inesperado ocorreu.", e);
-    } finally {
-        // Destruição do cliente para liberação dos recursos do sistema
-        httpclient.getConnectionManager().shutdown();  // <-- CORRETO AQUI
+            // Seleciona apenas o PRIMEIRO <ul class="balls -lg">, que representa o último resultado
+            Element primeiraLista = doc.select("ul.balls.-lg").first();
+
+            // Se não encontrou, retorna erro
+            if (primeiraLista == null) {
+                throw new RuntimeException("Não foi possível localizar o último resultado.");
+            }
+
+            // Pega todos os <li class="ball"> dentro da primeira lista
+            Elements dezenas = primeiraLista.select("li.ball");
+
+            // Cria array para armazenar as 6 dezenas
+            String[] resultado = new String[dezenas.size()];
+
+            for (int i = 0; i < dezenas.size(); i++) {
+                resultado[i] = dezenas.get(i).text();
+            }
+
+            return resultado;
+
+        } catch (IOException e) {
+            throw new RuntimeException("Erro ao obter os dados da Mega-Sena", e);
+        }
     }
 }
 
-private static String[] obterDezenas(String html) {
-    // Posição inicial de onde começam as dezenas
-    Integer parteInicial = html.indexOf(MARCA_INICIAL_RETORNO_NAO_UTIL) + MARCA_INICIAL_RETORNO_NAO_UTIL.length();
-    // Posição final de onde terminam as dezenas
-    Integer parteFinal = html.indexOf(MARCA_FINAL_RETORNO_NAO_UTIL);
-    
-    // Substring montada com base nas posições, com remoção de espaços
-    String extracao = html.substring(parteInicial, parteFinal).replaceAll(" ", ""); // <-- AJUSTADO
-    
-    // Criação de array, com base no método split(), separando por hífen
-    String[] numeros = extracao.split("-"); // <-- AJUSTADO
-    return numeros;
-}
-}
